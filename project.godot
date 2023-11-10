@@ -17,6 +17,8 @@ config/icon="res://icon.svg"
 [autoload]
 
 Nakama="*res://addons/com.heroiclabs.nakama/Nakama.gd"
+Online="*res://autoload/online.gd"
+OnlineMatch="*res://autoload/online_match.gd"
 
 [rendering]
 
