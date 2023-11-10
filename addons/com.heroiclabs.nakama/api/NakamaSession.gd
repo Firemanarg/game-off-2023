@@ -91,7 +91,7 @@ func is_valid():
 
 func _init(p_token = null, p_created : bool = false, p_refresh_token = null, p_exception = null):
 	super(p_exception)
-	
+
 	if p_token:
 		_created = p_created
 		_parse_token(p_token)
@@ -145,7 +145,7 @@ func _jwt_unpack(p_token : String) -> Dictionary:
 		payload += "="
 	payload = payload.replace("-", "+").replace("_", "/")
 	var unpacked = Marshalls.base64_to_utf8(payload)
-	
+
 	var json = JSON.new()
 	var error = json.parse(unpacked)
 

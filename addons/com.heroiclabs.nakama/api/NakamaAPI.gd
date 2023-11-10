@@ -3568,7 +3568,7 @@ class ApiWriteStorageObjectsRequest extends NakamaAsyncResult:
 		output += "objects: %s, " % [_objects]
 		return output
 
-# 
+#
 class ProtobufAny extends NakamaAsyncResult:
 
 	const _SCHEMA = {
@@ -3576,13 +3576,13 @@ class ProtobufAny extends NakamaAsyncResult:
 		"value": {"name": "_value", "type": TYPE_STRING, "required": false},
 	}
 
-	# 
+	#
 	var _type_url
 	var type_url : String:
 		get:
 			return "" if not _type_url is String else String(_type_url)
 
-	# 
+	#
 	var _value
 	var value : String:
 		get:
