@@ -2,6 +2,7 @@ extends Node
 
 
 signal match_created(match_code)
+signal match_presences_changed()
 
 var match_code: String = ""
 
@@ -37,5 +38,19 @@ func create_match() -> void:
 	if OnlineMatch.match_.is_exception():
 		pass
 	match_created.emit(match_code)
+	print("[match]: created successfully!")
+	Online.socket.received_match_presence.connect(_on_received_match_presence)
 	return
+
+
+func _on_received_match_presence(match_presence: NakamaRTAPI.MatchPresenceEvent) -> void:
+	for presence in match_presence.leaves:
+		OnlineMatch.match_presences.erase(presence.user_id)
+	for presence in match_presence.joins:
+		OnlineMatch.match_presences[presence.user_id] = presence
+	var has_presences_changed: bool = not (
+		match_presence.leaves.is_empty() or match_presence.joins.is_empty()
+	)
+	if has_presences_changed:
+		match_presences_changed.emit()
 
