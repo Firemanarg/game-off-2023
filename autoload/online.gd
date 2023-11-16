@@ -47,9 +47,29 @@ func call_rpc_func(func_id: String, params: Dictionary = {}) -> NakamaAPI.ApiRpc
 func device_auth(username = null) -> AuthResponse:
 	var device_id: String = OS.get_unique_id()
 	session = await client.authenticate_device_async(device_id, username)
+	return await _update_online_data(session)
+#	if session.is_exception():
+#		var exception: NakamaException = session.get_exception()
+#		print("[auth_error]: ", exception.message)
+#		return AuthResponse.INVALID_AUTH
+#	var response: AuthResponse = await _update_account()
+#	if not response == AuthResponse.SUCCESS:
+#		return response
+#	response = await _connect_socket()
+#	if not response == AuthResponse.SUCCESS:
+#		return response
+#	return AuthResponse.SUCCESS
+
+
+func debug_auth(id: String) -> AuthResponse: # Parei aqui
+	session = await client.authenticate_custom_async(id)
+	return await _update_online_data(session)
+
+
+func _update_online_data(session: NakamaSession) -> AuthResponse:
 	if session.is_exception():
 		var exception: NakamaException = session.get_exception()
-		print("[auth_error]: ", exception.message)
+		print("[auth_error]: >", exception.message)
 		return AuthResponse.INVALID_AUTH
 	var response: AuthResponse = await _update_account()
 	if not response == AuthResponse.SUCCESS:
@@ -63,7 +83,7 @@ func device_auth(username = null) -> AuthResponse:
 func _update_account() -> AuthResponse:
 	account = await client.get_account_async(session)
 	if account.is_exception():
-		print("[auth_error]: ", account.get_exception().message)
+		print("[auth_error]: >", account.get_exception().message)
 		return AuthResponse.INVALID_AUTH
 	return AuthResponse.SUCCESS
 
@@ -71,7 +91,7 @@ func _update_account() -> AuthResponse:
 func _connect_socket() -> AuthResponse:
 	var response: NakamaAsyncResult = await socket.connect_async(session)
 	if response.is_exception():
-		print("[socket_error]", response.get_exception().message)
+		print("[socket_error]: >", response.get_exception().message)
 		return AuthResponse.SOCKET_ERROR
 	return AuthResponse.SUCCESS
 
