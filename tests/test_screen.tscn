@@ -129,9 +129,8 @@ layout_mode = 2
 
 [node name="LineEditMatchCode" type="LineEdit" parent="MarginContainer/HBoxContainer/VBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/CenterContainer/VBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
-text = "46QDE5"
 placeholder_text = "Code"
 alignment = 1
 

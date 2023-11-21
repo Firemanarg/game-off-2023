@@ -13,8 +13,9 @@ func _ready() -> void:
 	OnlineMatch.match_joined.connect(_on_match_joined)
 	OnlineMatch.match_presences_changed.connect(_update_players_list)
 #	var auth_response: Online.AuthResponse = await Online.device_auth()
-	var auth_response: Online.AuthResponse = await Online.debug_auth(	# DEBUG
-		Time.get_time_string_from_system())	# DEBUG
+	randomize()	# DEBUG
+	var random_auth_id: String = str(100000 + randi() % 100000)	# DEBUG
+	var auth_response: Online.AuthResponse = await Online.debug_auth(random_auth_id)	# DEBUG
 	print("Auth response: ", auth_response)
 	if not auth_response == Online.AuthResponse.SUCCESS:
 		return
@@ -52,9 +53,9 @@ func _update_fields() -> void:
 
 func _update_players_list() -> void:
 	%ItemListPlayers.clear()
-	%ItemListPlayers.add_item(OnlineMatch.match_.self_user.username)
-	for presence in OnlineMatch.match_presences:
+	for presence in OnlineMatch.match_presences.values():
 		%ItemListPlayers.add_item(presence.username, null, false)
+	print("[players_list(", OnlineMatch.match_.self_user.username, ")]: updated")
 
 
 func _on_match_created(match_created) -> void:

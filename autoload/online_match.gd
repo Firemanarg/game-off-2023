@@ -43,27 +43,6 @@ func create_match() -> void:
 	Online.socket.received_match_presence.connect(_on_received_match_presence)
 
 
-func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
-	match_code = ""
-	match_presences.clear()
-	matchmaker_ticket = null
-	match_ = await Online.socket.join_match_async(match_id)
-	if match_.is_exception():
-		print("[match_error]: >", OnlineMatch.match_.get_exception().message)
-		match_ = null
-		if emit_signals:
-			match_join_failed.emit()
-		return false
-	var label_fields: PackedStringArray = match_.label.split(" ")
-	for field in label_fields:
-		if field.begins_with("code="):
-			match_code = field.split("=")[1]
-			break
-	if emit_signals:
-		match_joined.emit()
-	return true
-
-
 func join_match(match_code: String) -> void:
 	var payload: Dictionary = {"match_code" : match_code}
 	var response = await Online.call_rpc_func("get_match_id_by_code", payload)
@@ -84,17 +63,51 @@ func join_match(match_code: String) -> void:
 		match_join_failed.emit()
 		match_ = null
 		return
-	match_joined.emit()
 	Online.socket.received_match_presence.connect(_on_received_match_presence)
+	match_joined.emit()
+
+
+func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
+	match_code = ""
+	matchmaker_ticket = null
+	match_ = await Online.socket.join_match_async(match_id)
+	if match_.is_exception():
+		print("[match_error]: >", OnlineMatch.match_.get_exception().message)
+		match_ = null
+		if emit_signals:
+			match_join_failed.emit()
+		return false
+	var label_fields: PackedStringArray = match_.label.split(" ")
+	for field in label_fields:
+		if field.begins_with("code="):
+			match_code = field.split("=")[1]
+			break
+	_update_match_presences()
+	if emit_signals:
+		match_joined.emit()
+	return true
+
+
+func _update_match_presences() -> void:
+	match_presences.clear()
+	if not match_ == null:
+		match_presences[match_.self_user.user_id] = match_.self_user
+		for presence in match_.presences:
+			match_presences[presence.user_id] = presence
+		match_presences_changed.emit()
 
 
 func _on_received_match_presence(match_presence: NakamaRTAPI.MatchPresenceEvent) -> void:
+	print("[match_presence (", match_.self_user.username, ")]: received signal: ", match_presence)
 	for presence in match_presence.leaves:
+		print("\t> Player ", presence.username, " left match")
 		OnlineMatch.match_presences.erase(presence.user_id)
 	for presence in match_presence.joins:
+		print("\t> Player ", presence.username, " joined match")
 		OnlineMatch.match_presences[presence.user_id] = presence
-	var has_presences_changed: bool = not (
-		match_presence.leaves.is_empty() or match_presence.joins.is_empty()
+	var has_presences_changed: bool = (
+		not match_presence.leaves.is_empty()
+		or not match_presence.joins.is_empty()
 	)
 	if has_presences_changed:
 		match_presences_changed.emit()
