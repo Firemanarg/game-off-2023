@@ -1,7 +1,9 @@
 local nk = require("nakama")
 local gen = require("generator")
 
-local function _register_match_code(match_code, match_id)
+local MatchUtils = {}
+
+function MatchUtils.register_match_code(match_code, match_id)
 	local data = {
 		collection = "RegisteredMatches",
 		key = match_code,
@@ -13,6 +15,16 @@ local function _register_match_code(match_code, match_id)
 	nk.storage_write({data})
 	nk.logger_info(string.format(
 		"Registered match '%s' with code '%s'.", match_id, match_code))
+end
+
+function MatchUtils.unregister_match_code(match_code)
+	local data = {
+		collection = "RegisteredMatches",
+		key = match_code,
+		user_id = nil
+	}
+	nk.storage_delete({data})
+	nk.logger_info(string.format("Unregistered match with code '%s'.", match_code))
 end
 
 local function _get_registered_match(match_code)
@@ -42,7 +54,7 @@ local function create_match(context, _)
 		local modulename = "match_handler"
 		local initialstate = {match_code = match_code}
 		local match_id = nk.match_create(modulename, initialstate)
-		_register_match_code(match_code, match_id)
+		MatchUtils.register_match_code(match_code, match_id)
 		local result = {
 			match_id = match_id,
 			match_code = match_code
@@ -71,3 +83,5 @@ end
 
 nk.register_rpc(create_match, "create_match")
 nk.register_rpc(get_match_id_by_code, "get_match_id_by_code")
+
+return MatchUtils

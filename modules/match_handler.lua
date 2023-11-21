@@ -59,6 +59,13 @@ function M.match_leave(context, dispatcher, tick, state, presences)
 		state.presences[presence.session_id] = nil
 	end
 
+	nk.logger_info(string.format("Player left. Presences count: %s", tostring(table.getn(state.presences))))
+	if table.getn(state.presences) == 0 then
+		nk.logger_info(string.format("Finishing match with code '%s'", state.match_code))
+		utils.unregister_match_code(state.match_code)
+		return nil
+	end
+
 	return state
 end
 
@@ -69,6 +76,8 @@ end
 function M.match_terminate(context, dispatcher, tick, state, grace_seconds)
   local message = "Server shutting down in " .. grace_seconds .. " seconds"
   dispatcher.broadcast_message(2, message)
+
+  utils.unregister_match_code(state.match_code)
 
   return nil
 end
