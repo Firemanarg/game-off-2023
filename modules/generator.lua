@@ -73,7 +73,7 @@ function Generator.generate_username()
 	local adjective = _capitalize(adjectives[n_adjective])
 	local suffix_number = tostring(math.random(1, 999999))
 	local result = noun..adjective..suffix_number
-	return {username = result}
+	return result
 end
 
 return Generator
