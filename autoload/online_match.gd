@@ -5,6 +5,7 @@ signal match_created(match_code)
 signal match_creation_failed()
 signal match_joined()
 signal match_join_failed()
+signal match_quickjoin_failed()
 signal match_presences_changed()
 
 var match_code: String = ""
@@ -63,8 +64,56 @@ func join_match(match_code: String) -> void:
 		match_join_failed.emit()
 		match_ = null
 		return
+	print("[join_match]: Joined match: (", match_code, ") ", match_id)
 	Online.socket.received_match_presence.connect(_on_received_match_presence)
 	match_joined.emit()
+
+
+func quick_join_match() -> void:
+	match_ = null
+	var joined: bool = await _quickjoin_attempt_find()
+	if joined:
+		print("[quickjoin_match]: Joined match: (", match_code, ") ", match_.match_id)
+		Online.socket.received_match_presence.connect(_on_received_match_presence)
+		match_joined.emit()
+		return
+
+
+#	var response = await Online.call_rpc_func("find_available_match")
+#	if response.is_exception():
+#		print("[match_error]: Error finding available match")
+#		match_quickjoin_failed.emit()
+#		return
+#	var json = JSON.parse_string(response.payload)
+#	var match_id: String = json.get("match_id", "")
+#	if match_id.is_empty():
+#		print("[quickjoin_match]: No available matches")
+#		match_quickjoin_failed.emit()
+#		return
+#	print("MatchID: ", match_id)
+#	var joined: bool = await _join_match_by_id(match_id, true)
+#	if not joined:
+#		match_join_failed.emit()
+#		match_ = null
+#		return
+
+
+func _quickjoin_attempt_find() -> bool:
+	var response = await Online.call_rpc_func("find_available_match")
+	if response.is_exception():
+		print("[match_error]: Error finding available match")
+		match_quickjoin_failed.emit()
+		return false
+	var json = JSON.parse_string(response.payload)
+	var match_id: String = json.get("match_id", "")
+	if match_id.is_empty():
+		return false
+	print("[quickjoin_match]: Found available match: (", match_code, ") ", match_id)
+	var joined: bool = await _join_match_by_id(match_id, true)
+	if not joined:
+		match_join_failed.emit()
+		return false
+	return true
 
 
 func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
@@ -77,11 +126,9 @@ func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
 		if emit_signals:
 			match_join_failed.emit()
 		return false
-	var label_fields: PackedStringArray = match_.label.split(" ")
-	for field in label_fields:
-		if field.begins_with("code="):
-			match_code = field.split("=")[1]
-			break
+	print("[match_code]: Parsing label: ", match_.label)
+	var json = JSON.parse_string(match_.label)
+	match_code = json.get("code", "")
 	_update_match_presences()
 	if emit_signals:
 		match_joined.emit()

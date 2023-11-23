@@ -78,4 +78,4 @@ func _on_button_join_match_pressed() -> void:
 
 
 func _on_button_quick_join_match_pressed() -> void:
-	pass # Replace with function body.
+	await OnlineMatch.quick_join_match()
