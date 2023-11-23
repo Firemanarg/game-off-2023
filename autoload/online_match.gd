@@ -77,6 +77,16 @@ func quick_join_match() -> void:
 		Online.socket.received_match_presence.connect(_on_received_match_presence)
 		match_joined.emit()
 		return
+	Online.socket.received_matchmaker_matched.connect(_on_received_matchmaker_matched)
+	var min_players: int = 2
+	var max_players: int = 8
+	var query: String = ""
+	var string_properties: Dictionary = {}
+	var numeric_properties: Dictionary = {}
+	print("[quickjoin_match]: Starting matchmaking...")
+	matchmaker_ticket = await Online.socket.add_matchmaker_async(
+		query, min_players, max_players, string_properties, numeric_properties
+	)
 
 
 #	var response = await Online.call_rpc_func("find_available_match")
@@ -158,4 +168,14 @@ func _on_received_match_presence(match_presence: NakamaRTAPI.MatchPresenceEvent)
 	)
 	if has_presences_changed:
 		match_presences_changed.emit()
+
+
+func _on_received_matchmaker_matched(matched: NakamaRTAPI.MatchmakerMatched) -> void:
+	print("[matchmaker]: Matched: ", matched.match_id)
+#	match_ = await Online.socket.join_matched_async(matched)
+	Online.socket.received_matchmaker_matched.disconnect(_on_received_matchmaker_matched)
+	var joined: bool = await _join_match_by_id(matched.match_id, true)
+	if not joined:
+		print("[matchmaker]: Failed to join match")
+		return
 
