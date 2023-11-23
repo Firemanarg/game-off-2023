@@ -12,7 +12,12 @@ function M.match_init(context, params)
 		match_code = match_code
 	}
 	local tick_rate = 1
-	local label = "code=" .. match_code
+	local label_data = {
+		visibility = "public",
+		code = match_code
+	}
+	local label = nk.json_encode(label_data)
+	-- local label = "code=" .. match_code
 
 	return state, tick_rate, label
 end
