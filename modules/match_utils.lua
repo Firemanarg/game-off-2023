@@ -81,7 +81,27 @@ local function get_match_id_by_code(_, payload)
 	return nk.json_encode(result)
 end
 
+local function find_available_match(context, _)
+	local limit = 10
+	local min_size = 0
+	local max_size = 8
+	local filter = "+label.visibility:public"
+	local matches = nk.match_list(limit, true, "", min_size, max_size, filter)
+	local match_id = nil
+
+	nk.logger_info(string.format("Result of match listing: %s matches found!",
+		table.getn(matches)))
+	if (table.getn(matches) > 0) then
+		table.sort(matches, function(a, b)
+			return a.size > b.size;
+		end)
+		match_id = matches[1].match_id
+	end
+	return nk.json_encode({match_id = match_id})
+end
+
 nk.register_rpc(create_match, "create_match")
 nk.register_rpc(get_match_id_by_code, "get_match_id_by_code")
+nk.register_rpc(find_available_match, "find_available_match")
 
 return MatchUtils
