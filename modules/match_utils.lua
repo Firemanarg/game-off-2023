@@ -44,7 +44,7 @@ local function _get_registered_match(match_code)
 	end
 end
 
-local function create_match(context, _)
+local function create_match(context, payload)
 	local success, result = pcall(gen.generate_match_code)
 	if not success then
 		nk.logger_info(string.format("Failed request %q", result))
@@ -52,7 +52,14 @@ local function create_match(context, _)
 	else
 		local match_code = result.match_code
 		local modulename = "match_handler"
-		local initialstate = {match_code = match_code}
+		local invited = {}
+		if payload.invited ~= nil then
+			invited = payload.invited
+		end
+		local initialstate = {
+			match_code = match_code,
+			invited = invited
+		}
 		local match_id = nk.match_create(modulename, initialstate)
 		MatchUtils.register_match_code(match_code, match_id)
 		local result = {
@@ -100,8 +107,29 @@ local function find_available_match(context, _)
 	return nk.json_encode({match_id = match_id})
 end
 
+local function on_matchmaker_matched(context, matched_users)
+	local success, result = pcall(gen.generate_match_code)
+	if not success then
+		nk.logger_info(string.format("Failed request %q", result))
+		error("Unable to generate match code")
+		return nil
+	else
+		local match_code = result.match_code
+		local modulename = "match_handler"
+		local initialstate = {
+			match_code = match_code,
+			invited = matched_users
+		}
+		local match_id = nk.match_create("match_handler", initialstate)
+		nk.logger_info(string.format("Matchmaker matched: Match ID: %s", match_id))
+		return match_id
+	end
+end
+
 nk.register_rpc(create_match, "create_match")
 nk.register_rpc(get_match_id_by_code, "get_match_id_by_code")
 nk.register_rpc(find_available_match, "find_available_match")
+
+nk.register_matchmaker_matched(on_matchmaker_matched)
 
 return MatchUtils
