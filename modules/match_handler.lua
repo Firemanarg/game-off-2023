@@ -9,7 +9,8 @@ function M.match_init(context, params)
 	nk.logger_info(string.format("Match code: %s", tostring(match_code)))
 	local state = {
 		presences = {},
-		match_code = match_code
+		match_code = match_code,
+		empty_ticks = 0
 	}
 	local tick_rate = 1
 	local label_data = {
@@ -64,17 +65,23 @@ function M.match_leave(context, dispatcher, tick, state, presences)
 		state.presences[presence.session_id] = nil
 	end
 
-	nk.logger_info(string.format("Player left. Presences count: %s", tostring(table.getn(state.presences))))
-	if table.getn(state.presences) == 0 then
-		nk.logger_info(string.format("Finishing match with code '%s'", state.match_code))
-		utils.unregister_match_code(state.match_code)
-		return nil
-	end
-
 	return state
 end
 
 function M.match_loop(context, dispatcher, tick, state, messages)
+
+	local presences_count = table.getn(state.presences)
+	if presences_count == 0 then
+		state.empty_ticks = state.empty_ticks + 1
+	end
+
+	if state.empty_ticks > 100 then
+		nk.logger_info(
+			string.format("Finishing match with code '%s' due to inactivity!", state.match_code))
+		utils.unregister_match_code(state.match_code)
+		return nil
+	end
+
 	return state
 end
 
