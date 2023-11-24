@@ -41,7 +41,6 @@ func create_match() -> void:
 	var match_code: String = json.get("match_code")
 	await _join_match_by_id(match_id, false)
 	match_created.emit(match_code)
-	Online.socket.received_match_presence.connect(_on_received_match_presence)
 
 
 func join_match(match_code: String) -> void:
@@ -65,7 +64,6 @@ func join_match(match_code: String) -> void:
 		match_ = null
 		return
 	print("[join_match]: Joined match: (", match_code, ") ", match_id)
-	Online.socket.received_match_presence.connect(_on_received_match_presence)
 	match_joined.emit()
 
 
@@ -74,7 +72,6 @@ func quick_join_match() -> void:
 	var joined: bool = await _quickjoin_attempt_find()
 	if joined:
 		print("[quickjoin_match]: Joined match: (", match_code, ") ", match_.match_id)
-		Online.socket.received_match_presence.connect(_on_received_match_presence)
 		match_joined.emit()
 		return
 	Online.socket.received_matchmaker_matched.connect(_on_received_matchmaker_matched)
@@ -87,25 +84,6 @@ func quick_join_match() -> void:
 	matchmaker_ticket = await Online.socket.add_matchmaker_async(
 		query, min_players, max_players, string_properties, numeric_properties
 	)
-
-
-#	var response = await Online.call_rpc_func("find_available_match")
-#	if response.is_exception():
-#		print("[match_error]: Error finding available match")
-#		match_quickjoin_failed.emit()
-#		return
-#	var json = JSON.parse_string(response.payload)
-#	var match_id: String = json.get("match_id", "")
-#	if match_id.is_empty():
-#		print("[quickjoin_match]: No available matches")
-#		match_quickjoin_failed.emit()
-#		return
-#	print("MatchID: ", match_id)
-#	var joined: bool = await _join_match_by_id(match_id, true)
-#	if not joined:
-#		match_join_failed.emit()
-#		match_ = null
-#		return
 
 
 func _quickjoin_attempt_find() -> bool:
@@ -136,6 +114,7 @@ func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
 		if emit_signals:
 			match_join_failed.emit()
 		return false
+	Online.socket.received_match_presence.connect(_on_received_match_presence)
 	print("[match_code]: Parsing label: ", match_.label)
 	var json = JSON.parse_string(match_.label)
 	match_code = json.get("code", "")
@@ -172,7 +151,6 @@ func _on_received_match_presence(match_presence: NakamaRTAPI.MatchPresenceEvent)
 
 func _on_received_matchmaker_matched(matched: NakamaRTAPI.MatchmakerMatched) -> void:
 	print("[matchmaker]: Matched: ", matched.match_id)
-#	match_ = await Online.socket.join_matched_async(matched)
 	Online.socket.received_matchmaker_matched.disconnect(_on_received_matchmaker_matched)
 	var joined: bool = await _join_match_by_id(matched.match_id, true)
 	if not joined:
