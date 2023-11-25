@@ -7,6 +7,12 @@ signal match_joined()
 signal match_join_failed()
 signal match_quickjoin_failed()
 signal match_presences_changed()
+signal ready_state_changed()
+
+enum {
+	READY_OP_CODE = 1,
+	GAME_STARTING_OP_CODE = 2,
+}
 
 var match_code: String = ""
 
@@ -16,6 +22,7 @@ var match_code: String = ""
 ## [code]key[/code]: [param user_id] as [String]
 ## | [code]value[/code]: [param presence] as [code]NakamaRTAPI.UserPresence[/code]
 @onready var match_presences: Dictionary = {}
+@onready var match_players: Dictionary = {}
 
 
 func _ready() -> void:
@@ -86,6 +93,19 @@ func quick_join_match() -> void:
 	)
 
 
+func set_ready_state(state: bool) -> void:
+	var data: String = JSON.stringify({
+		"is_ready": state,
+#		"presence": JSON.stringify(match_.self_user.serialize())
+	})
+	print("sending data: ", data)
+	await Online.socket.send_match_state_async(
+		match_.match_id,
+		READY_OP_CODE,
+		data,
+	)
+
+
 func _quickjoin_attempt_find() -> bool:
 	var response = await Online.call_rpc_func("find_available_match")
 	if response.is_exception():
@@ -115,6 +135,7 @@ func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
 			match_join_failed.emit()
 		return false
 	Online.socket.received_match_presence.connect(_on_received_match_presence)
+	Online.socket.received_match_state.connect(_on_received_match_state)
 	print("[match_code]: Parsing label: ", match_.label)
 	var json = JSON.parse_string(match_.label)
 	match_code = json.get("code", "")
@@ -126,10 +147,19 @@ func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
 
 func _update_match_presences() -> void:
 	match_presences.clear()
+	match_players.clear()
 	if not match_ == null:
 		match_presences[match_.self_user.user_id] = match_.self_user
+		match_players[match_.self_user.user_id] = {
+			"presence": match_.self_user,
+			"is_ready": false
+		}
 		for presence in match_.presences:
 			match_presences[presence.user_id] = presence
+			match_players[presence.user_id] = {
+				"presence": presence,
+				"is_ready": false
+			}
 		match_presences_changed.emit()
 
 
@@ -138,15 +168,38 @@ func _on_received_match_presence(match_presence: NakamaRTAPI.MatchPresenceEvent)
 	for presence in match_presence.leaves:
 		print("\t> Player ", presence.username, " left match")
 		OnlineMatch.match_presences.erase(presence.user_id)
+		OnlineMatch.match_players.erase(presence.user_id)
 	for presence in match_presence.joins:
 		print("\t> Player ", presence.username, " joined match")
 		OnlineMatch.match_presences[presence.user_id] = presence
+		match_players[presence.user_id] = {
+			"presence": presence,
+			"is_ready": false
+		}
 	var has_presences_changed: bool = (
 		not match_presence.leaves.is_empty()
 		or not match_presence.joins.is_empty()
 	)
 	if has_presences_changed:
 		match_presences_changed.emit()
+
+
+func _on_received_match_state(match_state: NakamaRTAPI.MatchData) -> void:
+#	if match_state.presence == null:
+#		return
+	var data = JSON.parse_string(match_state.data)
+	if match_state.op_code == READY_OP_CODE:
+		var user_id: String = data.user_id
+		var is_ready: bool = data.get("is_ready", true)
+		if is_ready:
+			print("Player %s is ready!" % [user_id])
+		else:
+			print("Player %s is not ready!" % [user_id])
+		match_players[user_id].is_ready = is_ready
+		ready_state_changed.emit()
+		# Parei aqui. Falta terminar a parte de assignar o ready dos players.
+		# Sugestão: Reestruturar (que nem foi feito no server-side) o dicionário
+		# que contém informações dos players
 
 
 func _on_received_matchmaker_matched(matched: NakamaRTAPI.MatchmakerMatched) -> void:

@@ -12,6 +12,7 @@ func _ready() -> void:
 	OnlineMatch.match_created.connect(_on_match_created)
 	OnlineMatch.match_joined.connect(_on_match_joined)
 	OnlineMatch.match_presences_changed.connect(_update_players_list)
+	OnlineMatch.ready_state_changed.connect(_on_ready_state_changed)
 #	var auth_response: Online.AuthResponse = await Online.device_auth()
 	randomize()	# DEBUG
 	var random_auth_id: String = str(100000 + randi() % 100000)	# DEBUG
@@ -19,6 +20,7 @@ func _ready() -> void:
 	print("Auth response: ", auth_response)
 	if not auth_response == Online.AuthResponse.SUCCESS:
 		return
+	Online.session.refresh(Online.session)
 	is_authed = true
 	_update_fields()
 
@@ -53,8 +55,13 @@ func _update_fields() -> void:
 
 func _update_players_list() -> void:
 	%ItemListPlayers.clear()
-	for presence in OnlineMatch.match_presences.values():
-		%ItemListPlayers.add_item(presence.username, null, false)
+	for player in OnlineMatch.match_players.values():
+		var text: String = player.presence.username
+		if player.is_ready:
+			text += " - READY"
+		%ItemListPlayers.add_item(text, null, false)
+#	for presence in OnlineMatch.match_presences.values():
+#		%ItemListPlayers.add_item(presence.username, null, false)
 	print("[players_list(", OnlineMatch.match_.self_user.username, ")]: updated")
 
 
@@ -79,3 +86,12 @@ func _on_button_join_match_pressed() -> void:
 
 func _on_button_quick_join_match_pressed() -> void:
 	await OnlineMatch.quick_join_match()
+
+
+func _on_button_ready_pressed() -> void:
+	%ButtonReady.disabled = true
+	OnlineMatch.set_ready_state(true)
+	pass
+
+func _on_ready_state_changed() -> void:
+	_update_players_list()
