@@ -37,10 +37,19 @@ function M.match_join(context, dispatcher, tick, state, presences)
 	--  ...
 	-- }
 	for _, presence in ipairs(presences) do
-		state.players[presence.session_id] = {}
-		state.players[presence.session_id]["presence"] = presence
-		state.players[presence.session_id]["is_ready"] = false
+		state.players[presence.user_id] = {}
+		state.players[presence.user_id]["presence"] = presence
+		state.players[presence.user_id]["is_ready"] = false
 	end
+
+	for _, player in pairs(state.players) do
+		if player.is_ready then
+			dispatcher.broadcast_message(READY_OP_CODE, nk.json_encode(
+				{user_id = player.user_id, is_ready = true}
+			))
+		end
+	end
+
 	return state
   end
 
@@ -56,9 +65,17 @@ function M.match_join_attempt(context, dispatcher, tick, state, presence, metada
 	return state, acceptuser
 end
 
+-- function M.match_join(context, dispatcher, tick, state, presences)
+--   for _, presence in ipairs(presences) do
+--     state.presences[presence.session_id] = presence
+--   end
+
+--   return state
+-- end
+
 function M.match_leave(context, dispatcher, tick, state, presences)
 	for _, presence in ipairs(presences) do
-		state.players[presence.session_id] = nil
+		state.players[presence.user_id] = nil
 	end
 
 	return state
@@ -69,6 +86,8 @@ local function _loop_check_empty_match(state, max_ticks)
 	local presences_count = table.getn(state.players)
 	if presences_count == 0 then
 		state.empty_ticks = state.empty_ticks + 1
+	else
+		state.empty_ticks = 0
 	end
 
 	if state.empty_ticks > max_ticks then
@@ -93,6 +112,11 @@ end
 
 function M.match_loop(context, dispatcher, tick, state, messages)
 
+	for key, _ in ipairs(state) do
+		nk.logger_info(string.format("\t> %s", tostring(key)))
+	end
+	-- nk.logger_info(
+	-- 	string.format("Match players count: %s", tostring(table.getn(state.players))))
 	if _loop_check_empty_match(state, 100) then
 		nk.logger_info(
 			string.format("Finishing match with code '%s' due to inactivity!", state.match_code))
@@ -101,18 +125,24 @@ function M.match_loop(context, dispatcher, tick, state, messages)
 	end
 
 	for _, message in ipairs(messages) do
+		local json = nk.json_decode(message.data)
 		if message.op_code == READY_OP_CODE then
-			local session_id = message.sender.session_id
-			state.players[session_id]["is_ready"] = true
-			nk.logger_info(string.format("Player %s is ready", session_id))
+			local user_id = message.sender.user_id
+			local ready_state = json.is_ready
+			state.players[user_id]["is_ready"] = ready_state
+			if ready_state then
+				nk.logger_info(string.format("Player %s is ready", user_id))
+			else
+				nk.logger_info(string.format("Player %s is not ready", user_id))
+			end
 			dispatcher.broadcast_message(READY_OP_CODE, nk.json_encode(
-				{session_id = session_id, is_ready = true}
+				{user_id = user_id, is_ready = ready_state}
 			))
 
-			if _loop_check_all_players_ready(state) then
-				local message = "Game starting!"
-				dispatcher.broadcast_message(GAME_STARTING_OP_CODE, message)
-			end
+			-- if _loop_check_all_players_ready(state) then
+			-- 	local message = "Game starting!"
+			-- 	dispatcher.broadcast_message(GAME_STARTING_OP_CODE, message)
+			-- end
 		end
 	end
 
