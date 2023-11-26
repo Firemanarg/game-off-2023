@@ -1,6 +1,7 @@
 local nk = require("nakama")
 local utils = require("match_utils")
 local gen = require("generator")
+local scd = require("state_codes")
 
 local READY_OP_CODE = 1
 local GAME_STARTING_OP_CODE = 2
@@ -12,6 +13,7 @@ function M.match_init(context, params)
 	nk.logger_info(string.format("Match code: %s", tostring(match_code)))
 	local state = {
 		players = {},
+		player_count = 0,
 		match_code = match_code,
 		empty_ticks = 0
 	}
@@ -40,12 +42,15 @@ function M.match_join(context, dispatcher, tick, state, presences)
 		state.players[presence.user_id] = {}
 		state.players[presence.user_id]["presence"] = presence
 		state.players[presence.user_id]["is_ready"] = false
+		state.player_count = state.player_count + 1
 	end
 
 	for _, player in pairs(state.players) do
 		if player.is_ready then
-			dispatcher.broadcast_message(READY_OP_CODE, nk.json_encode(
-				{user_id = player.user_id, is_ready = true}
+			dispatcher.broadcast_message(
+				scd.OPCODE.READY,
+				nk.json_encode({user_id = player.user_id, is_ready = true},
+				presences
 			))
 		end
 	end
@@ -65,17 +70,10 @@ function M.match_join_attempt(context, dispatcher, tick, state, presence, metada
 	return state, acceptuser
 end
 
--- function M.match_join(context, dispatcher, tick, state, presences)
---   for _, presence in ipairs(presences) do
---     state.presences[presence.session_id] = presence
---   end
-
---   return state
--- end
-
 function M.match_leave(context, dispatcher, tick, state, presences)
 	for _, presence in ipairs(presences) do
 		state.players[presence.user_id] = nil
+		state.player_count = state.player_count - 1
 	end
 
 	return state
@@ -83,8 +81,7 @@ end
 
 local function _loop_check_empty_match(state, max_ticks)
 
-	local presences_count = table.getn(state.players)
-	if presences_count == 0 then
+	if state.player_count == 0 then
 		state.empty_ticks = state.empty_ticks + 1
 	else
 		state.empty_ticks = 0
@@ -112,11 +109,6 @@ end
 
 function M.match_loop(context, dispatcher, tick, state, messages)
 
-	for key, _ in ipairs(state) do
-		nk.logger_info(string.format("\t> %s", tostring(key)))
-	end
-	-- nk.logger_info(
-	-- 	string.format("Match players count: %s", tostring(table.getn(state.players))))
 	if _loop_check_empty_match(state, 100) then
 		nk.logger_info(
 			string.format("Finishing match with code '%s' due to inactivity!", state.match_code))
@@ -126,7 +118,7 @@ function M.match_loop(context, dispatcher, tick, state, messages)
 
 	for _, message in ipairs(messages) do
 		local json = nk.json_decode(message.data)
-		if message.op_code == READY_OP_CODE then
+		if message.op_code == scd.OPCODE.READY then
 			local user_id = message.sender.user_id
 			local ready_state = json.is_ready
 			state.players[user_id]["is_ready"] = ready_state
@@ -135,7 +127,7 @@ function M.match_loop(context, dispatcher, tick, state, messages)
 			else
 				nk.logger_info(string.format("Player %s is not ready", user_id))
 			end
-			dispatcher.broadcast_message(READY_OP_CODE, nk.json_encode(
+			dispatcher.broadcast_message(scd.OPCODE.READY, nk.json_encode(
 				{user_id = user_id, is_ready = ready_state}
 			))
 
