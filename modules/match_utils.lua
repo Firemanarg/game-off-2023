@@ -4,6 +4,8 @@ local gen = require("generator")
 local MatchUtils = {}
 
 function MatchUtils.register_match_code(match_code, match_id)
+	nk.logger_info(string.format(
+		"Registering match '%s' with code '%s'.", match_id, match_code))
 	local data = {
 		collection = "RegisteredMatches",
 		key = match_code,
@@ -53,8 +55,11 @@ local function create_match(context, payload)
 		local match_code = result.match_code
 		local modulename = "match_handler"
 		local invited = {}
-		if payload.invited ~= nil then
-			invited = payload.invited
+		if payload ~= nil and payload ~= "" then
+			local json = nk.json_decode(payload)
+			if json.invited ~= nil then
+				invited = json.invited
+			end
 		end
 		local initialstate = {
 			match_code = match_code,
@@ -121,6 +126,7 @@ local function on_matchmaker_matched(context, matched_users)
 			invited = matched_users
 		}
 		local match_id = nk.match_create("match_handler", initialstate)
+		MatchUtils.register_match_code(match_code, match_id)
 		nk.logger_info(string.format("Matchmaker matched: Match ID: %s", match_id))
 		return match_id
 	end
