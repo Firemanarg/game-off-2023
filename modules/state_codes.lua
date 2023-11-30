@@ -5,7 +5,8 @@ Codes.OPCODE = {
 	START = 2,
 	END = 3,
 	UPDATE = 4,
-	MESSAGE = 5
+	MESSAGE = 5,
+	JOINING = 6
 }
 
 Codes.MATCH_STATUS = {

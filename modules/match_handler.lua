@@ -39,24 +39,34 @@ function M.match_join(context, dispatcher, tick, state, presences)
 	--  ...
 	-- }
 	for _, presence in ipairs(presences) do
+		nk.logger_info(string.format("@$ player %s joined", presence.user_id))
 		state.players[presence.user_id] = {}
 		state.players[presence.user_id]["presence"] = presence
 		state.players[presence.user_id]["is_ready"] = false
 		state.player_count = state.player_count + 1
+
 	end
 
 	for _, player in pairs(state.players) do
 		if player.is_ready then
 			dispatcher.broadcast_message(
 				scd.OPCODE.READY,
-				nk.json_encode({user_id = player.user_id, is_ready = true},
+				nk.json_encode({
+					["user_id"] = player.presence.user_id,
+					["is_ready"] = player.is_ready
+				}),
 				presences
-			))
+			)
+			for _, presence in ipairs(presences) do
+				nk.logger_info(string.format(
+					"[match_join][broadcast]: sending ready message to %s: Player %s is ready: %s",
+					presence.user_id, player.presence.user_id, tostring(player.is_ready)))
+			end
 		end
 	end
 
 	return state
-  end
+end
 
 function M.match_join_attempt(context, dispatcher, tick, state, presence, metadata)
 	local acceptuser = true
@@ -109,6 +119,9 @@ end
 
 function M.match_loop(context, dispatcher, tick, state, messages)
 
+	for key, _ in ipairs(state) do
+		nk.logger_info(string.format("\tkey -> %s", tostring(key)))
+	end
 	if _loop_check_empty_match(state, 100) then
 		nk.logger_info(
 			string.format("Finishing match with code '%s' due to inactivity!", state.match_code))
@@ -130,6 +143,9 @@ function M.match_loop(context, dispatcher, tick, state, messages)
 			dispatcher.broadcast_message(scd.OPCODE.READY, nk.json_encode(
 				{user_id = user_id, is_ready = ready_state}
 			))
+			nk.logger_info(string.format(
+				"[match_loop][broadcast]: sending ready message to all players: Player %s is ready: %s",
+				user_id, tostring(ready_state)))
 
 			-- if _loop_check_all_players_ready(state) then
 			-- 	local message = "Game starting!"
