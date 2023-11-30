@@ -61,9 +61,18 @@ func device_auth(username = null) -> AuthResponse:
 #	return AuthResponse.SUCCESS
 
 
-func debug_auth(id: String) -> AuthResponse: # Parei aqui
+func debug_auth(id: String) -> AuthResponse:
 	session = await client.authenticate_custom_async(id)
+	session = await client.session_refresh_async(session)
 	return await _update_online_data(session)
+
+
+func debug_print(context: String, message: String) -> void:
+	if account == null:
+		return
+	var time: String = Time.get_time_string_from_system()
+	var username: String = account.user.username
+	print("%s [%s (%s)]: %s" % [time, context, username, message])
 
 
 func _update_online_data(session: NakamaSession) -> AuthResponse:
