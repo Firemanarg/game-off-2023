@@ -91,6 +91,14 @@ func quick_join_match() -> void:
 	)
 
 
+func leave_match() -> void:
+	if match_ == null:
+		return
+	var response: NakamaAsyncResult = await Online.socket.leave_match_async(match_.match_id)
+	if response.is_exception():
+		Online.debug_print("leave_match", "Error: " + response.get_exception().message)
+
+
 func set_ready_state(state: bool) -> void:
 	var data: String = JSON.stringify({ "is_ready": state })
 	Online.debug_print("set_ready_state", "Sending data: %s" % [str(data)])

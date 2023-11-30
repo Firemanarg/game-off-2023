@@ -216,3 +216,4 @@ text = "Leave Match"
 [connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/CenterContainer/VBoxContainer/HBoxContainer/ButtonJoinMatch" to="." method="_on_button_join_match_pressed"]
 [connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/CenterContainer/VBoxContainer/ButtonQuickJoinMatch" to="." method="_on_button_quick_join_match_pressed"]
 [connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer2/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ButtonReady" to="." method="_on_button_ready_pressed"]
+[connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer2/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/ButtonLeaveMatch" to="." method="_on_button_leave_match_pressed"]
