@@ -105,10 +105,12 @@ func _on_button_ready_pressed() -> void:
 
 func _on_ready_state_changed() -> void:
 	Online.debug_print("test_screen", "Signal received: ready_state_changed")
-	_update_players_list()
-
+	_update_fields()
 
 
 func _on_button_leave_match_pressed() -> void:
 	Online.debug_print("button_pressed", "Pressed 'leave_match'")
 	await OnlineMatch.leave_match()
+	is_on_match = false
+	_update_fields()
+	_update_players_list()

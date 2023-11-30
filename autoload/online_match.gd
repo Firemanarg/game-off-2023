@@ -97,6 +97,9 @@ func leave_match() -> void:
 	var response: NakamaAsyncResult = await Online.socket.leave_match_async(match_.match_id)
 	if response.is_exception():
 		Online.debug_print("leave_match", "Error: " + response.get_exception().message)
+		return
+	match_ = null
+	match_players.clear()
 
 
 func set_ready_state(state: bool) -> void:
@@ -134,6 +137,8 @@ func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
 	matchmaker_ticket = null
 	Online.debug_print("_join_match_by_id", "Cleaning all presences!")
 	match_players.clear()
+	if not matchmaker_ticket == null and not matchmaker_ticket.is_empty():
+		await Online.socket.remove_matchmaker_async(matchmaker_ticket.ticket)
 	match_ = await Online.socket.join_match_async(match_id)
 	_update_match_presences()
 	if match_.is_exception():
