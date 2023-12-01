@@ -197,6 +197,13 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Ready"
 
+[node name="LabelCountdown" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer2/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Countdown: 10 seconds"
+horizontal_alignment = 1
+
 [node name="ItemListPlayers" type="ItemList" parent="MarginContainer/HBoxContainer/VBoxContainer2/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 300)
@@ -211,6 +218,10 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Leave Match"
+
+[node name="TimerCountdown" type="Timer" parent="."]
+unique_name_in_owner = true
+one_shot = true
 
 [connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/CenterContainer/VBoxContainer/ButtonCreateMatch" to="." method="_on_button_create_match_pressed"]
 [connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/CenterContainer/VBoxContainer/HBoxContainer/ButtonJoinMatch" to="." method="_on_button_join_match_pressed"]

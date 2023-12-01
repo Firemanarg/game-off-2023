@@ -5,6 +5,8 @@ extends Node
 
 var is_authed: bool = false
 var is_on_match: bool = false
+var all_players_ready: bool = false
+var is_countdown_running: bool = false
 
 
 func _ready() -> void:
@@ -12,6 +14,8 @@ func _ready() -> void:
 	OnlineMatch.match_joined.connect(_on_match_joined)
 	OnlineMatch.match_presences_changed.connect(_update_players_list)
 	OnlineMatch.ready_state_changed.connect(_on_ready_state_changed)
+	OnlineMatch.countdown_started.connect(_on_countdown_started)
+	OnlineMatch.countdown_finished.connect(_on_countdown_finished)
 #	var auth_response: Online.AuthResponse = await Online.device_auth()
 	randomize()	# DEBUG
 	var random_auth_id: String = str(100000 + randi() % 100000)	# DEBUG
@@ -25,7 +29,9 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	pass
+	if is_countdown_running:
+		var seconds: int = %TimerCountdown.time_left
+		%LabelCountdown.set_text("Countdown: " + str(seconds) + " seconds")
 
 
 func _physics_process(_delta: float) -> void:
@@ -50,6 +56,7 @@ func _update_fields() -> void:
 	if is_on_match:
 		%LineEditLobbyCode.set_text(OnlineMatch.match_code)
 		_update_players_list()
+	%LabelCountdown.visible = all_players_ready
 
 
 func _update_players_list() -> void:
@@ -74,11 +81,25 @@ func _update_players_list() -> void:
 func _on_match_created(match_created) -> void:
 	is_on_match = true
 	_update_fields()
+	%ButtonReady.disabled = false
 
 
 func _on_match_joined() -> void:
 	is_on_match = true
 	_update_fields()
+	%ButtonReady.disabled = false
+
+
+func _on_countdown_started(seconds) -> void:
+	%LabelCountdown.visible = true
+	%LabelCountdown.set_text("Countdown: " + str(seconds) + " seconds")
+	%TimerCountdown.start(seconds)
+	is_countdown_running = true
+
+
+func _on_countdown_finished() -> void:
+	%LabelCountdown.visible = false
+	%LabelCountdown.set_text("Countdown: 0 seconds ")
 
 
 func _on_button_create_match_pressed() -> void:

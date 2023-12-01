@@ -8,10 +8,23 @@ signal match_join_failed()
 signal match_quickjoin_failed()
 signal match_presences_changed()
 signal ready_state_changed()
+signal countdown_started(seconds)
+signal countdown_finished()
 
-enum {
-	READY_OP_CODE = 1,
-	GAME_STARTING_OP_CODE = 2,
+enum Opcode {
+	READY = 1,
+	COUNTDOWN = 2,
+	START = 3,
+	UPDATE = 4,
+	MESSAGE = 5,
+	JOINING = 6,
+	END = 7,
+}
+
+enum CountdownStage {
+	STARTED = 1,
+	FINISHED = 2,
+	STOPPED = 3
 }
 
 var match_code: String = ""
@@ -109,7 +122,7 @@ func set_ready_state(state: bool) -> void:
 	Online.debug_print("set_ready_state", "Sending data: %s" % [str(data)])
 	await Online.socket.send_match_state_async(
 		match_.match_id,
-		READY_OP_CODE,
+		Opcode.READY,
 		data,
 	)
 
@@ -197,7 +210,7 @@ func _on_received_match_presence(match_presence: NakamaRTAPI.MatchPresenceEvent)
 func _on_received_match_state(match_state: NakamaRTAPI.MatchData) -> void:
 	Online.debug_print("match_state", "Received signal: " + str(match_state))
 	var data = JSON.parse_string(match_state.data)
-	if match_state.op_code == READY_OP_CODE:
+	if match_state.op_code == Opcode.READY:
 		var user_id: String = data.get("user_id", "")
 		var is_ready: bool = data.get("is_ready", true)
 		if user_id.is_empty():
@@ -222,6 +235,22 @@ func _on_received_match_state(match_state: NakamaRTAPI.MatchData) -> void:
 			]
 		)
 		ready_state_changed.emit()
+	elif match_state.op_code == Opcode.COUNTDOWN:
+		var stage: CountdownStage = data.stage
+		var remaining_secs: int = data.get("remaining_msecs", 0) / 1000.0 + 1
+		match stage:
+			CountdownStage.STARTED:
+				Online.debug_print(
+					"countdown",
+					"Countdown started: Remaining seconds: %s" % [str(remaining_secs)]
+				)
+				countdown_started.emit(remaining_secs)
+			CountdownStage.FINISHED:
+				Online.debug_print(
+					"countdown",
+					"Countdown state: Finished"
+				)
+				countdown_finished.emit()
 
 
 func _on_received_matchmaker_matched(matched: NakamaRTAPI.MatchmakerMatched) -> void:
