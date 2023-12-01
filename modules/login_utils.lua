@@ -50,6 +50,19 @@ function LoginUtils.rpc_is_username_taken(_, payload)
 	local is_taken = _is_username_taken(username)
 	return nk.json_encode({is_taken = is_taken})
 end
+	-- local json = nk.json_decode(payload)
+	-- local query = [[
+	-- 	SELECT id FROM users WHERE username = $1::TEXT
+	-- ]]
+	-- local username = json.username
+	-- local params = {username}
+	-- local rows = nk.sql_query(query, params)
+	-- for i, row in ipairs(rows)
+	-- do
+	-- 	return nk.json_encode({is_taken = "true"})
+	-- end
+	-- return nk.json_encode({is_taken = "false"})
+-- end
 
 function LoginUtils.generate_unique_username()
 	local is_taken = true
@@ -75,6 +88,20 @@ function LoginUtils.rpc_generate_unique_username(_, _)
 	local username = LoginUtils.generate_unique_username()
 	return nk.json_encode({username = username})
 end
+	-- local success, result = pcall(gen.generate_username)
+	-- if not success then
+	-- 	nk.logger_info(string.format("Failed request %q", result))
+	-- 	error("Unable to generate username")
+	-- else
+	-- 	local username = result.username
+	-- 	local is_taken = UsernameUtils.is_username_taken(username)
+	-- 	while is_taken do
+	-- 		username = gen.generate_username()
+	-- 		is_taken = UsernameUtils.is_username_taken(username)
+	-- 	end
+	-- 	return nk.json_encode({username = username})
+	-- end
+-- end
 
 function LoginUtils.set_username(_, payload)
 	local json = nk.json_decode(payload)
@@ -101,6 +128,6 @@ nk.register_req_after(generate_new_account_username, "AuthenticateDevice")
 nk.register_req_after(generate_new_account_username, "AuthenticateCustom")
 
 nk.register_rpc(LoginUtils.rpc_generate_unique_username, "generate_unique_username")
-nk.register_rpc(LoginUtils.is_username_taken, "is_username_taken")
+nk.register_rpc(LoginUtils.rpc_is_username_taken, "is_username_taken")
 
 return LoginUtils
