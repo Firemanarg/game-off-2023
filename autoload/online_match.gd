@@ -100,6 +100,8 @@ func leave_match() -> void:
 		return
 	match_ = null
 	match_players.clear()
+	Online.socket.received_match_presence.disconnect(_on_received_match_presence)
+	Online.socket.received_match_state.disconnect(_on_received_match_state)
 
 
 func set_ready_state(state: bool) -> void:
@@ -138,6 +140,7 @@ func _join_match_by_id(match_id: String, emit_signals: bool = true) -> bool:
 	Online.debug_print("_join_match_by_id", "Cleaning all presences!")
 	match_players.clear()
 	if not matchmaker_ticket == null and not matchmaker_ticket.is_empty():
+		Online.socket.received_matchmaker_matched.disconnect(_on_received_matchmaker_matched)
 		await Online.socket.remove_matchmaker_async(matchmaker_ticket.ticket)
 	match_ = await Online.socket.join_match_async(match_id)
 	_update_match_presences()
