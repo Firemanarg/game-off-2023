@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://b7ct0nvbespsd"]
+[gd_scene load_steps=7 format=3 uid="uid://b7ct0nvbespsd"]
 
 [ext_resource type="Shader" path="res://resources/shaders/metaballs.gdshader" id="1_0sewb"]
+[ext_resource type="Script" path="res://source/gui_screens/genetic_background.gd" id="2_4k5og"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5lxrp"]
 shader = ExtResource("1_0sewb")
@@ -8,6 +9,7 @@ shader_parameter/screen_size = null
 shader_parameter/feather = null
 shader_parameter/sum_influence = null
 shader_parameter/threshold = 1.0
+shader_parameter/blob_count = 1
 shader_parameter/positions = null
 shader_parameter/radii = null
 shader_parameter/base_color = null
@@ -18,12 +20,23 @@ shader_parameter/screen_size = Vector2(1152, 648)
 shader_parameter/feather = 0.015
 shader_parameter/sum_influence = 0.03
 shader_parameter/threshold = 0.84
-shader_parameter/positions = PackedVector2Array(0.31, 0.315, 0.465, 0.385, 0.27, 0.435)
-shader_parameter/radii = PackedFloat32Array(1.03, 1.305, 0.58)
+shader_parameter/blob_count = 8
+shader_parameter/positions = PackedVector2Array(0.89, 0.5, 0.89, 0.5, 0.89, 0.5, 0.89, 0.5, 0.89, 0.5, 0.89, 0.5, 0.89, 0.5, 0.89, 0.5)
+shader_parameter/radii = PackedFloat32Array(0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4)
 shader_parameter/base_color = Color(0, 0.533333, 0.54902, 1)
+
+[sub_resource type="Animation" id="Animation_j6e45"]
+resource_name = "default"
+length = 20.0
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_imuni"]
+_data = {
+"default": SubResource("Animation_j6e45")
+}
 
 [node name="GeneticBackground" type="Node2D"]
 material = SubResource("ShaderMaterial_5lxrp")
+script = ExtResource("2_4k5og")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -45,3 +58,9 @@ grow_vertical = 2
 color = Color(0, 0.458824, 0.317647, 1)
 
 [node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+autoplay = "default"
+libraries = {
+"": SubResource("AnimationLibrary_imuni")
+}
